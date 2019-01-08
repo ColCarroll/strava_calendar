@@ -1,0 +1,4 @@
+fitparse
+matplotlib
+numpy
+tqdm
