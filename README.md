@@ -13,6 +13,8 @@ pip install git+git://github.com/colcarroll/strava_calendar.git
 First download your data from Strava (see below for how). The last step gives you a `zip_path` to the archive with all the data. ***This is quite slow the first time you run it for a zip file and year (~5mins), but quite fast after that (~5s).***
 
 ```python
+from strava_calendar import plot_calendar
+
 plot_calendar(zip_path=zip_path, year=2018)
 ```
 
