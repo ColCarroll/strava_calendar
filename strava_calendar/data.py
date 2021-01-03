@@ -5,11 +5,63 @@ import re
 import zipfile
 
 from fitparse import FitFile
+import gpxpy
+import gzip
 import tqdm
 
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
 if not os.path.isdir(CACHE):
     os.mkdir(CACHE)
+
+
+class StravaGPXFile:
+    def __init__(self, data):
+        self.data = gpxpy.parse(data)
+        self.session_data = self._get_session_data()
+
+    def _get_session_data(self):
+        if len(self.data.tracks) != 1 or len(self.data.tracks[0].segments) != 1:
+            raise AssertionError("expected only 1 session record per file!")
+        segment = self.data.tracks[0].segments[0]
+        return {
+            "distance": self._get_total_distance(segment),
+            "elapsed_time": self._get_duration(segment),
+            "start_time": self._get_start_time(segment),
+            "sport": None,
+            "sub_sport": None,
+            "location": self._get_location(segment),
+            "route": self._get_route(segment),
+        }
+
+    def _get_total_distance(self, segment):
+        return segment.get_moving_data().moving_distance
+
+    def _get_duration(self, segment):
+        return segment.get_moving_data().moving_time
+
+    def _get_start_time(self, segment):
+        return segment.points[0].time.replace(tzinfo=None)
+
+    def _get_location(self, segment):
+        point = segment.points[0]
+        return {"lat": point.latitude, "long": point.longitude}
+
+    def _get_route(self, segment):
+        lat, long = zip(
+            *[
+                (
+                    int(pt.latitude * 2 ** 31 / 180.0),
+                    int(pt.longitude * 2 ** 31 / 180.0),
+                )
+                for pt in segment.points
+            ]
+        )
+        return {"lat": lat, "long": long}
+
+    def to_json(self):
+        data = self.session_data.copy()
+        data["start_time"] = data["start_time"].isoformat()
+        return data
 
 
 class StravaFile(FitFile):
@@ -40,9 +92,9 @@ class StravaFile(FitFile):
         ]
         coords = [row for row in coords if not any(j is None for j in row)]
         if len(coords) > 0:
-            lat, long = zip(*coords)
+            long, lat = zip(*coords)
         else:
-            lat, long = [], []
+            long, lat = [], []
         return {"lat": lat, "long": long}
 
     def to_json(self):
@@ -58,7 +110,21 @@ class StravaFile(FitFile):
 
 
 def is_sport(sport="running"):
+    # hardcode more paces if you are using GPX files...
+    if sport == "running":
+        # if not labelled, use 5min/mile -> 10min/mile
+        # as a guess for what is a run.
+        lo, hi = 0.1875, 0.375
+    else:
+        lo, hi = 0, 0
+
     def filter_func(strava_file):
+        if strava_file.session_data["sport"] is None:
+            pace = (
+                strava_file.session_data["elapsed_time"]
+                / strava_file.session_data["distance"]
+            )
+            return lo < pace < hi
         return strava_file.session_data["sport"] == sport
 
     return filter_func
@@ -79,17 +145,28 @@ def is_before(end_date):
 
 
 def get_files(zip_path):
-    pattern = re.compile(r"^activities/\d+.fit.gz$")
+    suffixes = (".fit.gz", ".gpx", ".gpx.gz")
     with zipfile.ZipFile(zip_path) as run_zip:
-        good_files = [f for f in run_zip.namelist() if pattern.match(f)]
+        good_files = []
+        for f in run_zip.namelist():
+            if f.startswith("activities/") and any(
+                f.endswith(suffix) for suffix in suffixes
+            ):
+                good_files.append(f)
         for filename in tqdm.tqdm(good_files):
             with run_zip.open(filename) as buff:
-                yield gzip.decompress(buff.read())
+                if filename.endswith("gz"):
+                    yield gzip.decompress(buff.read()), filename
+                else:
+                    yield buff.read(), filename
 
 
 def filter_files(zip_path, filters):
-    for data in get_files(zip_path):
-        strava_file = StravaFile(data)
+    for data, fname in get_files(zip_path):
+        if fname.endswith(".fit.gz"):
+            strava_file = StravaFile(data)
+        elif fname.endswith(".gpx") or fname.endswith(".gpx.gz"):
+            strava_file = StravaGPXFile(data)
         if all(f(strava_file) for f in filters):
             yield strava_file
 
@@ -108,7 +185,10 @@ def get_data(zip_path, sport, start_date, end_date):
         filters = [is_sport(sport), is_after(start_date), is_before(end_date)]
         data = {"activities": []}
         for strava_file in filter_files(zip_path, filters):
-            data["activities"].append(strava_file.to_json())
+            try:
+                data["activities"].append(strava_file.to_json())
+            except KeyError as e:
+                print(e)
         with open(filename, "w") as buff:
             json.dump(data, buff)
     with open(filename, "r") as buff:

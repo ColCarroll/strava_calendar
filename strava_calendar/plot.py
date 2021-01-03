@@ -29,7 +29,7 @@ class Run:
     def __init__(self, data, origin=np.array([0, 0])):
         self.data = copy.copy(data)
         self.data["route"] = np.array(
-            [self.data["route"]["lat"], self.data["route"]["long"]]
+            [self.data["route"]["long"], self.data["route"]["lat"]]
         ).T
         self.data["start_time"] = datetime.datetime.strptime(
             self.data["start_time"], "%Y-%m-%dT%H:%M:%S"
