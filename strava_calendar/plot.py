@@ -6,12 +6,10 @@ import numpy as np
 
 
 def _datetime_to_week_day(my_datetime):
-    """Returns day of week in (0, 7) and week of year in (-1, -52).
+    """Returns day of week in (0, 7) and week of year in (0, -52).
 
     This function is bad and should be fixed.
     """
-    if my_datetime.day == 1 and my_datetime.month == 1:
-        return (1, -1)
     if not isinstance(my_datetime, datetime.datetime) and isinstance(
         my_datetime, datetime.date
     ):
@@ -19,7 +17,8 @@ def _datetime_to_week_day(my_datetime):
             my_datetime.year, my_datetime.month, my_datetime.day
         )
     year, week, day = my_datetime.date().isocalendar()
-    week += 52 * (year % my_datetime.year)
+    if my_datetime.month == 1 and week > 50:
+        week = 0
     week_del, day = divmod(day, 7)
     week += week_del
     return day, -week

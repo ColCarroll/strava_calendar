@@ -21,7 +21,7 @@ class StravaGPXFile:
 
     def _get_session_data(self):
         if len(self.data.tracks) != 1 or len(self.data.tracks[0].segments) != 1:
-            raise AssertionError("expected only 1 session record per file!")
+            print(f"expected only 1 session record per file, not {len(self.data.tracks)} tracks and {len(self.data.tracks[0].segments)} segments")
         segment = self.data.tracks[0].segments[0]
         return {
             "distance": self._get_total_distance(segment),
@@ -70,9 +70,9 @@ class StravaFile(FitFile):
         self.session_data = self._get_session_data()
 
     def _get_session_data(self):
-        session_data = list(self.get_messages("session"))
+        session_data = list(self.get_messages("session"))[:1]
         if len(session_data) != 1:
-            raise AssertionError("Expected only 1 session record per file!")
+            print(f"expected only 1 session record per file, not {len(self.data.tracks)} tracks and {len(self.data.tracks[0].segments)} segments")
         return {j["name"]: j["value"] for j in session_data[0].as_dict()["fields"]}
 
     def location(self):
@@ -166,7 +166,7 @@ def filter_files(zip_path, filters):
         if fname.endswith(".fit.gz"):
             strava_file = StravaFile(data)
         elif fname.endswith(".gpx") or fname.endswith(".gpx.gz"):
-            strava_file = StravaGPXFile(data)
+                strava_file = StravaGPXFile(data)
         if all(f(strava_file) for f in filters):
             yield strava_file
 
