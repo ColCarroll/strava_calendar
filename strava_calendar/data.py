@@ -120,11 +120,15 @@ def is_sport(sport="running"):
 
     def filter_func(strava_file):
         if strava_file.session_data["sport"] is None:
-            pace = (
-                strava_file.session_data["elapsed_time"]
-                / strava_file.session_data["distance"]
-            )
-            return lo < pace < hi
+            # if distance is 0 or False-y, just skip it.
+            if strava_file.session_data["distance"]:
+                pace = (
+                    strava_file.session_data["elapsed_time"]
+                    / strava_file.session_data["distance"]
+                )
+                return lo < pace < hi
+            else:
+                return False
         return strava_file.session_data["sport"] == sport
 
     return filter_func
