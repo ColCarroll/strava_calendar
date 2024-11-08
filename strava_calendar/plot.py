@@ -211,4 +211,3 @@ class Plotter:
                     ),
                 )
         return fig, ax
-
