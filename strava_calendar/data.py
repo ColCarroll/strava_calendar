@@ -3,9 +3,9 @@ import json
 import os
 import zipfile
 
-from fitparse import FitFile
 import gpxpy
 import tqdm
+from fitparse import FitFile
 
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
 if not os.path.isdir(CACHE):
