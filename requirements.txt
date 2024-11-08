@@ -1,5 +1,0 @@
-fitparse
-matplotlib
-numpy
-tqdm
-gpxpy

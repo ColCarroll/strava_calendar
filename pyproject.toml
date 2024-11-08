@@ -1,0 +1,85 @@
+[project]
+name = "strava_calendar"
+version = "0.1.0"
+description = "Visualizations of your Strava data"
+authors = [
+    {name = "Colin Carroll", email = "colcarroll@gmail.com"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "fitparse",
+    "matplotlib",
+    "numpy",
+    "tqdm",
+    "gpxpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "pytype>=2024.1.24",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ColCarroll/strava_calendar"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["strava_calendar"]
+include-package-data = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=strava_calendar"
+testpaths = ["strava_calendar"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.tox
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+lint.select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "N",  # naming
+    "UP", # pyupgrade
+    "I",  # isort
+    "NPY", # numpy-specific rules
+]
+
+[tool.pytype]
+inputs = ["strava_calendar"]
+python_version = "3.12"
+keep_going = true
+strict_import = true
+protocols = true

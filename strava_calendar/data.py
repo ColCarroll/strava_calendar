@@ -1,12 +1,10 @@
 import gzip
 import json
 import os
-import re
 import zipfile
 
 from fitparse import FitFile
 import gpxpy
-import gzip
 import tqdm
 
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
@@ -21,7 +19,10 @@ class StravaGPXFile:
 
     def _get_session_data(self):
         if len(self.data.tracks) != 1 or len(self.data.tracks[0].segments) != 1:
-            print(f"expected only 1 session record per file, not {len(self.data.tracks)} tracks and {len(self.data.tracks[0].segments)} segments")
+            print(
+                f"expected only 1 session record per file, not {len(self.data.tracks)} "
+                f"tracks and {len(self.data.tracks[0].segments)} segments"
+            )
         segment = self.data.tracks[0].segments[0]
         return {
             "distance": self._get_total_distance(segment),
@@ -50,8 +51,8 @@ class StravaGPXFile:
         lat, long = zip(
             *[
                 (
-                    int(pt.latitude * 2 ** 31 / 180.0),
-                    int(pt.longitude * 2 ** 31 / 180.0),
+                    int(pt.latitude * 2**31 / 180.0),
+                    int(pt.longitude * 2**31 / 180.0),
                 )
                 for pt in segment.points
             ]
@@ -72,7 +73,10 @@ class StravaFile(FitFile):
     def _get_session_data(self):
         session_data = list(self.get_messages("session"))[:1]
         if len(session_data) != 1:
-            print(f"expected only 1 session record per file, not {len(self.data.tracks)} tracks and {len(self.data.tracks[0].segments)} segments")
+            print(
+                f"expected only 1 session record per file, not {len(self.data.tracks)} "
+                f"tracks and {len(self.data.tracks[0].segments)} segments"
+            )
         return {j["name"]: j["value"] for j in session_data[0].as_dict()["fields"]}
 
     def location(self):
@@ -81,8 +85,8 @@ class StravaFile(FitFile):
             self.session_data["start_position_long"],
         )
         if (lat is not None) and (long is not None):
-            lat *= 180.0 / 2 ** 31
-            long *= 180.0 / 2 ** 31
+            lat *= 180.0 / 2**31
+            long *= 180.0 / 2**31
         return {"lat": lat, "long": long}
 
     def route(self):
@@ -170,7 +174,7 @@ def filter_files(zip_path, filters):
         if fname.endswith(".fit.gz"):
             strava_file = StravaFile(data)
         elif fname.endswith(".gpx") or fname.endswith(".gpx.gz"):
-                strava_file = StravaGPXFile(data)
+            strava_file = StravaGPXFile(data)
         if all(f(strava_file) for f in filters):
             yield strava_file
 
@@ -195,6 +199,5 @@ def get_data(zip_path, sport, start_date, end_date):
                 print(e)
         with open(filename, "w") as buff:
             json.dump(data, buff)
-    with open(filename, "r") as buff:
+    with open(filename) as buff:
         return json.load(buff)
-
