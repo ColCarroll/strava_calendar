@@ -1,9 +1,6 @@
 # Install dev dependencies
 pip install ".[dev]"
 
-# Format code
-black .
-
 # Run type checking
 pytype
 
