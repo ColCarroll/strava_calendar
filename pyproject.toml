@@ -29,7 +29,6 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "black>=23.0.0",
     "pytype>=2024.1.24",
     "ruff>=0.1.0",
 ]
@@ -50,18 +49,6 @@ minversion = "7.0"
 addopts = "-ra -q --cov=strava_calendar"
 testpaths = ["strava_calendar"]
 python_files = ["test_*.py"]
-
-[tool.black]
-line-length = 88
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.tox
-  | build
-  | dist
-)/
-'''
 
 [tool.ruff]
 line-length = 88

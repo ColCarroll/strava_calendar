@@ -1,15 +1,18 @@
+import datetime
 import gzip
 import json
-import os
+import pathlib
 import zipfile
+from collections.abc import Callable, Generator, Iterable
+from typing import Any
 
 import gpxpy
 import tqdm
 from fitparse import FitFile
 
-CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
-if not os.path.isdir(CACHE):
-    os.mkdir(CACHE)
+CACHE = pathlib.Path(__file__).parent.resolve() / ".cache"
+if not CACHE.is_dir():
+    CACHE.mkdir()
 
 
 class StravaGPXFile:
@@ -67,7 +70,9 @@ class StravaGPXFile:
 
 class StravaFile(FitFile):
     def __init__(self, file):
-        super().__init__(file)
+        # These two check being false should make things somewhat faster, at
+        # the expense of error messages, I think...
+        super().__init__(file, check_crc=False, check_developer_data=False)
         self.session_data = self._get_session_data()
 
     def _get_session_data(self):
@@ -79,7 +84,7 @@ class StravaFile(FitFile):
             )
         return {j["name"]: j["value"] for j in session_data[0].as_dict()["fields"]}
 
-    def location(self):
+    def location(self) -> dict[str, float]:
         lat, long = (
             self.session_data["start_position_lat"],
             self.session_data["start_position_long"],
@@ -89,7 +94,7 @@ class StravaFile(FitFile):
             long *= 180.0 / 2**31
         return {"lat": lat, "long": long}
 
-    def route(self):
+    def route(self) -> dict[str, list[float]]:
         coords = [
             [record.get_value("position_long"), record.get_value("position_lat")]
             for record in self.get_messages("record")
@@ -101,7 +106,7 @@ class StravaFile(FitFile):
             long, lat = [], []
         return {"lat": lat, "long": long}
 
-    def to_json(self):
+    def to_json(self) -> dict[str, Any]:
         return {
             "distance": self.session_data["total_distance"],
             "elapsed_time": self.session_data["total_timer_time"],
@@ -113,7 +118,11 @@ class StravaFile(FitFile):
         }
 
 
-def is_sport(sport="running"):
+DataFile = StravaFile | StravaGPXFile
+FilterFunc = Callable[[DataFile], bool]
+
+
+def is_sport(sport: str = "running") -> FilterFunc:
     # hardcode more paces if you are using GPX files...
     if sport == "running":
         # if not labelled, use 5min/mile -> 10min/mile
@@ -122,7 +131,7 @@ def is_sport(sport="running"):
     else:
         lo, hi = 0, 0
 
-    def filter_func(strava_file):
+    def filter_func(strava_file: DataFile) -> bool:
         if strava_file.session_data["sport"] is None:
             # if distance is 0 or False-y, just skip it.
             if strava_file.session_data["distance"]:
@@ -138,21 +147,21 @@ def is_sport(sport="running"):
     return filter_func
 
 
-def is_after(start_date):
-    def filter_func(strava_file):
+def is_after(start_date: datetime.datetime) -> FilterFunc:
+    def filter_func(strava_file: DataFile) -> bool:
         return strava_file.session_data["start_time"] >= start_date
 
     return filter_func
 
 
-def is_before(end_date):
-    def filter_func(strava_file):
+def is_before(end_date: datetime.datetime) -> FilterFunc:
+    def filter_func(strava_file: DataFile) -> bool:
         return strava_file.session_data["start_time"] < end_date
 
     return filter_func
 
 
-def get_files(zip_path):
+def get_files(zip_path: pathlib.Path) -> Generator[tuple[bytes, str]]:
     suffixes = (".fit.gz", ".gpx", ".gpx.gz")
     with zipfile.ZipFile(zip_path) as run_zip:
         good_files = []
@@ -169,7 +178,9 @@ def get_files(zip_path):
                     yield buff.read(), filename
 
 
-def filter_files(zip_path, filters):
+def filter_files(
+    zip_path: pathlib.Path, filters: Iterable[FilterFunc]
+) -> Generator[DataFile]:
     for data, fname in get_files(zip_path):
         if fname.endswith(".fit.gz"):
             strava_file = StravaFile(data)
@@ -179,17 +190,22 @@ def filter_files(zip_path, filters):
             yield strava_file
 
 
-def get_data(zip_path, sport, start_date, end_date):
+def get_data(
+    zip_path: str | pathlib.Path,
+    sport: str,
+    start_date: datetime.datetime,
+    end_date: datetime.datetime,
+):
+    zip_path: pathlib.Path = pathlib.Path(zip_path)
     date_fmt = "%Y-%m-%d"
-    zip_fname = os.path.basename(zip_path)
-    filter_dir = os.path.join(CACHE, zip_fname)
-    if not os.path.isdir(filter_dir):
-        os.mkdir(filter_dir)
-    filename = os.path.join(
-        filter_dir,
-        f"{sport}_{start_date.strftime(date_fmt)}_{end_date.strftime(date_fmt)}.json",
+    filter_dir = CACHE / zip_path.path
+    if not filter_dir.is_dir():
+        filter_dir.mkdir()
+    filename = (
+        filter_dir
+        / f"{sport}_{start_date.strftime(date_fmt)}_{end_date.strftime(date_fmt)}.json"
     )
-    if not os.path.exists(filename):
+    if not filename.exists():
         filters = [is_sport(sport), is_after(start_date), is_before(end_date)]
         data = {"activities": []}
         for strava_file in filter_files(zip_path, filters):
@@ -197,7 +213,7 @@ def get_data(zip_path, sport, start_date, end_date):
                 data["activities"].append(strava_file.to_json())
             except KeyError as e:
                 print(e)
-        with open(filename, "w") as buff:
+        with filename.open("w") as buff:
             json.dump(data, buff)
-    with open(filename) as buff:
+    with filename.open() as buff:
         return json.load(buff)
