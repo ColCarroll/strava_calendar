@@ -10,10 +10,6 @@ import gpxpy
 import tqdm
 from fitparse import FitFile
 
-CACHE = pathlib.Path(__file__).parent.resolve() / ".cache"
-if not CACHE.is_dir():
-    CACHE.mkdir()
-
 
 class StravaGPXFile:
     def __init__(self, data):
@@ -70,9 +66,9 @@ class StravaGPXFile:
 
 class StravaFile(FitFile):
     def __init__(self, file):
-        # These two check being false should make things somewhat faster, at
+        # The check_crc being false should make things somewhat faster, at
         # the expense of error messages, I think...
-        super().__init__(file, check_crc=False, check_developer_data=False)
+        super().__init__(file, check_crc=False)
         self.session_data = self._get_session_data()
 
     def _get_session_data(self):
@@ -195,14 +191,20 @@ def get_data(
     sport: str,
     start_date: datetime.datetime,
     end_date: datetime.datetime,
+    cache_dir: pathlib.Path | None = None,
 ):
+    if cache_dir is None:
+        cache_dir = pathlib.Path(__file__).parent.resolve() / ".cache"
+        if not cache_dir.is_dir():
+            cache_dir.mkdir()
+
     zip_path: pathlib.Path = pathlib.Path(zip_path)
     date_fmt = "%Y-%m-%d"
-    filter_dir = CACHE / zip_path.path
-    if not filter_dir.is_dir():
-        filter_dir.mkdir()
+    cache_dir = cache_dir / zip_path.name
+    if not cache_dir.is_dir():
+        cache_dir.mkdir()
     filename = (
-        filter_dir
+        cache_dir
         / f"{sport}_{start_date.strftime(date_fmt)}_{end_date.strftime(date_fmt)}.json"
     )
     if not filename.exists():
