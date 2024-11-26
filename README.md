@@ -18,7 +18,7 @@ from strava_calendar import plot_calendar
 plot_calendar(zip_path=zip_path, year=2018)
 ```
 
-![default plot](https://github.com/colcarroll/strava_calendar/blob/master/samples/sample_1.png "Default plot")
+![default plot](https://github.com/colcarroll/strava_calendar/blob/main/samples/sample_1.png "Default plot")
 
 
 You can control how many columns there are, the spacing between months and columns, and the label in the top left:
@@ -27,7 +27,7 @@ You can control how many columns there are, the spacing between months and colum
 plot_calendar(zip_path=zip_path, year=2017, n_cols=6, month_gap=1.5, col_gap=1, label='')
 ```
 
-![custom plot](https://github.com/colcarroll/strava_calendar/blob/master/samples/sample_2.png "Custom Plot")
+![custom plot](https://github.com/colcarroll/strava_calendar/blob/main/samples/sample_2.png "Custom Plot")
 
 You can also plot a single column of weeks, which is pleasant.
 
@@ -35,7 +35,7 @@ You can also plot a single column of weeks, which is pleasant.
 plot_calendar(zip_path=zip_path, year=2017, n_cols=1)
 ```
 
-![strip plot](https://github.com/colcarroll/strava_calendar/blob/master/samples/sample_3.png "Strip Plot")
+![strip plot](https://github.com/colcarroll/strava_calendar/blob/main/samples/sample_3.png "Strip Plot")
 
 If you want to write more custom code, you can give that a shot, too:
 
@@ -56,7 +56,7 @@ fig, ax, offset = plotter.plot_month(year=2018, month=6, fig=fig, ax=ax)
 ax.text(0, offset + 4.2, 'Weeee!', fontdict={'fontsize': 32, 'fontweight': 'heavy'}, alpha=0.5)
 ```
 
-![month plot](https://github.com/colcarroll/strava_calendar/blob/master/samples/sample_4.png "Month Plot")
+![month plot](https://github.com/colcarroll/strava_calendar/blob/main/samples/sample_4.png "Month Plot")
 
 ## Bulk export from Strava
 
