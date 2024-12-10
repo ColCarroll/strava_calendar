@@ -58,6 +58,10 @@ ax.text(0, offset + 4.2, 'Weeee!', fontdict={'fontsize': 32, 'fontweight': 'heav
 
 ![month plot](https://github.com/colcarroll/strava_calendar/blob/main/samples/sample_4.png "Month Plot")
 
+## See also! 
+
+Downloading your data is a bit of a pain. You migh as well try out (this awesome project)[https://github.com/Lisa-Ho/year-in-sports] while you're visualizing your year!
+
 ## Bulk export from Strava
 
 The process for downloading data is also [described on the Strava website](https://support.strava.com/hc/en-us/articles/216918437-Exporting-your-Data-and-Bulk-Export#Bulk):
