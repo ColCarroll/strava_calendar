@@ -60,7 +60,7 @@ ax.text(0, offset + 4.2, 'Weeee!', fontdict={'fontsize': 32, 'fontweight': 'heav
 
 ## See also! 
 
-Downloading your data is a bit of a pain. You migh as well try out (this awesome project)[https://github.com/Lisa-Ho/year-in-sports] while you're visualizing your year!
+Downloading your data is a bit of a pain. You migh as well try out [this awesome project](https://github.com/Lisa-Ho/year-in-sports) while you're visualizing your year!
 
 ## Bulk export from Strava
 
